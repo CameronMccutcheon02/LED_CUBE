@@ -2,14 +2,8 @@
 #include <digitalWriteFast.h>
 #define LATCH_PIN 10
 #define LEDS_PER_LEVEL 64
-uint8_t cube0[8][8][3];
-uint8_t cube1[8][8][3];
-uint8_t cube2[8][8][3];
-uint8_t cube3[8][8][3];
-
-byte red0[LEDS_PER_LEVEL], red1[LEDS_PER_LEVEL], red2[LEDS_PER_LEVEL], red3[LEDS_PER_LEVEL];
-byte blue0[LEDS_PER_LEVEL], blue1[LEDS_PER_LEVEL], blue2[LEDS_PER_LEVEL], blue3[LEDS_PER_LEVEL];
-byte green0[LEDS_PER_LEVEL], green1[LEDS_PER_LEVEL], green2[LEDS_PER_LEVEL], green3[LEDS_PER_LEVEL];
+#define LED_RESOLUTION 8
+uint8_t cube[LED_RESOLUTION][8][8][3]; //LED_Resolution is color control //First 8 is the level of the cube we are currently on //Second 8 is the rows //3 is the colors
 
 
 int BAM_BIT = 0, BAM_Counter = 0;
@@ -40,8 +34,8 @@ void setup() {
 void loop () {
   int mode = 0;
   switch (mode) {
-    case 1: setFirstLayer(); break;
-    case 0: setColor(4, 1, 3); break;
+    case 0: setFirstLayer(); break;
+    case 1: setColor(7, 1, 1); break;
     default: colorchange(); break;
   }
 }
@@ -50,45 +44,15 @@ ISR(TIMER1_COMPA_vect) {
   uint8_t k;
   int i;
   SPI.transfer(0x01 << anode_level);
-  int start_byte = anode_level * 8;
-  int max_byte = (anode_level + 1) * 8;
-  switch (BAM_BIT) {
-    case 0:
-      for (i = 2; i > -1; i--) {
-        for (k = 0; k < 8; k++) {
-          SPI.transfer(cube0[anode_level][k][i]);
-        }
-      }
-      break;
 
-    case 1:
-      for (i = 2; i > -1; i--) {
-        for (k = 0; k < 8; k++) {
-          SPI.transfer(cube1[anode_level][k][i]);
-        }
-      }
-      break;
-
-    case 2:
-      for (i = 2; i > -1; i--) {
-        for (k = 0; k < 8; k++) {
-          SPI.transfer(cube2[anode_level][k][i]);
-        }
-      }
-      break;
-
-    case 3:
-      for (i = 2; i > -1; i--) {
-        for (k = 0; k < 8; k++) {
-          SPI.transfer(cube3[anode_level][k][i]);
-        }
-      }
-      break;
+  for (i = 2; i > -1; i--) {
+    for (k = 0; k < 8; k++) {
+      SPI.transfer(cube[BAM_BIT][anode_level][k][i]);
+    }
   }
   digitalWriteFast(LATCH_PIN, HIGH);
-
   BAM_BIT++;
-  if (BAM_BIT == 4) {
+  if (BAM_BIT == LED_RESOLUTION) {
     BAM_BIT = 0;
     anode_level++;
   }
@@ -99,114 +63,69 @@ ISR(TIMER1_COMPA_vect) {
 }
 
 void colorchange() {
-  int i, j, k;
-  int del = 250;
-  //for (int i = 0; i < 5; i++) {
-  for (j = 0; j < 5; j++) {
-      setColor(0, j, 0);
-      delay(del);
-  }
-  for (j = 0; j < 5; j++) {
-      setColor(0, 0, j);
-      delay(del);
-  }
-  for (i = 4; i >= 0; i--) {
-      setColor(0,4,i);
-      delay(del);
-  }
-  for (i = 0; i < 5; i++) {
-    setColor(i,4,0);
-    delay(del);
-  }
-  for (i = 4; i >= 0; i--) {
-    setColor(4,i,0);
-    delay(del);
-  }
-  for (i = 0; i < 5; i++) {
-    setColor(4,0,i);
-    delay(del);
-  }
-  for (i = 4; i >= 0; i--) {
-    setColor(i,0,4);
-    delay(del);
-  }
-  //delay(500);
-  clearCube();
 }
 
 
 void clearCube() {
-  for (uint8_t k = 0; k < 8; k++) {
-    for (uint8_t j = 0; j < 8; j++) {
-      for (uint8_t i = 0; i < 3; i++) {
-        cube0[k][j][i] = 0x00;
-        cube1[k][j][i] = 0x00;
-        cube2[k][j][i] = 0x00;
-        cube3[k][j][i] = 0x00;
+  for (int l = 0; l < LED_RESOLUTION; l++) {
+    for (uint8_t k = 0; k < 8; k++) {
+      for (uint8_t j = 0; j < 8; j++) {
+        for (uint8_t i = 0; i < 3; i++) {
+          cube[l][k][j][i] = 0x00;
+        }
       }
     }
   }
 }
 
 void setFirstLayer() {
-  for (uint8_t k = 0; k < 1; k++) {
-    for (uint8_t j = 0; j < 8; j++) {
-      for (uint8_t i = 0; i < 3; i++) {
-        cube0[k][j][i] = 0xFF;
-        cube1[k][j][i] = 0xFF;
-        cube2[k][j][i] = 0xFF;
-        cube3[k][j][i] = 0xFF;
+  for (int l = 0; l < LED_RESOLUTION; l++) {
+    for (uint8_t k = 0; k < 1; k++) {
+      for (uint8_t j = 0; j < 8; j++) {
+        for (uint8_t i = 0; i < 3; i++) {
+          cube[l][k][j][i] = 0xFF;
+        }
       }
     }
   }
 }
 
 void setColor(int red, int green, int blue) {
-  red = constrain(red, 0, 4);
-  blue = constrain(blue, 0, 4);
-  green = constrain(green, 0, 4);
-  for (uint8_t k = 0; k < 8; k++) {
-    for (uint8_t j = 0; j < 8; j++) {
-      switch (red) {
-        case 4: cube0[k][j][0] = 0xFF;
-        case 3: cube1[k][j][0] = 0xFF;
-        case 2: cube2[k][j][0] = 0xFF;
-        case 1: cube3[k][j][0] = 0xFF;
-      }
-      switch (green) {
-        case 4: cube0[k][j][1] = 0xFF;
-        case 3: cube1[k][j][1] = 0xFF;
-        case 2: cube2[k][j][1] = 0xFF;
-        case 1: cube3[k][j][1] = 0xFF;
-      }
-      switch (blue) {
-        case 4: cube0[k][j][2] = 0xFF;
-        case 3: cube1[k][j][2] = 0xFF;
-        case 2: cube2[k][j][2] = 0xFF;
-        case 1: cube3[k][j][2] = 0xFF;
+  red = constrain(red, 0, LED_RESOLUTION);
+  blue = constrain(blue, 0, LED_RESOLUTION);
+  green = constrain(green, 0, LED_RESOLUTION);
+  for (int l = 0; l < red; l++) {
+    for (uint8_t k = 0; k < 8; k++) {
+      for (uint8_t j = 0; j < 8; j++) {
+        cube[l][k][j][0] = 0xFF;
       }
     }
   }
+  for (int l = 0; l < green; l++) {
+    for (uint8_t k = 0; k < 8; k++) {
+      for (uint8_t j = 0; j < 8; j++) {
+        cube[l][k][j][1] = 0xFF;
+      }
+    }
+  }
+  for (int l = 0; l < blue; l++) {
+    for (uint8_t k = 0; k < 8; k++) {
+      for (uint8_t j = 0; j < 8; j++) {
+        cube[l][k][j][2] = 0xFF;
+      }
+    }
+  }
+  
 }
 
-void setGreen() {
-  for (uint8_t j = 0; j < 8; j++) {
-    red0[j] = 0x00; red1[j] = 0x00; red2[j] = 0x00; red3[j] = 0x00;
-    blue0[j] = 0x00; blue1[j] = 0x00; blue2[j] = 0x00; blue3[j] = 0x00;
-    green0[j] = 0xFF; green1[j] = 0xFF; green2[j] = 0xFF; green3[j] = 0xFF;
-  }
-}
-void setRed() {
-  for (uint8_t j = 0; j < 8; j++) {
-    red0[j] = 0xFF; red1[j] = 0xFF; red2[j] = 0xFF; red3[j] = 0xFF;
-    blue0[j] = 0x00; blue1[j] = 0x00; blue2[j] = 0x00; blue3[j] = 0x00;
-    green0[j] = 0x00; green1[j] = 0x00; green2[j] = 0x00; green3[j] = 0x00;
-  }
-}
-void setBlue() {
-  for (uint8_t j = 0; j < 8; j++) {
-    red0[j] = 0x00; red1[j] = 0x00; red2[j] = 0x00; red3[j] = 0x00;
-    blue0[j] = 0xFF; blue1[j] = 0xFF; blue2[j] = 0xFF; blue3[j] = 0xFF;
-    green0[j] = 0x00; green1[j] = 0x00; green2[j] = 0x00; green3[j] = 0x00;
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
