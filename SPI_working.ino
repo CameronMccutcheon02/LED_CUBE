@@ -16,7 +16,7 @@ void setup() {
   SPI.setBitOrder(MSBFIRST);//Most Significant Bit First
   SPI.setDataMode(SPI_MODE0);// Mode 0 Rising edge of data, keep clock low
   SPI.setClockDivider(SPI_CLOCK_DIV2);//Run the data in at 16MHz/2 - 8MHz
-  SPI.begin();
+  SPI.begin(); //SPI pin is pin 11 on ATMEGA & goes direct to 1st 595 //Pin 13 is clock pin and goes to - (SRCLK) on bottom row //Pin 10 is latch pin and goes to + (RCLK) on bottom row
   Serial.begin(9600);
 
   //Timer Setup ********
